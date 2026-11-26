@@ -21,28 +21,34 @@ The goals were to:
 
 ## Architecture
 
-```
- Internet scanners / bots
-          │  RDP (TCP 3389)
-          ▼
- ┌──────────────────────────────┐
- │ NSG: allow ANY inbound       │
- │ VM: dev-api-east2 (Win 10)   │
- │ Windows Firewall: RDP open   │
- └──────────────┬───────────────┘
-                │ Windows Security Events (AMA / data connector)
-                ▼
- ┌──────────────────────────────┐
- │ Log Analytics: law-soc-lab-0000 │
- │  └─ SecurityEvent table       │
- └──────────────┬───────────────┘
-                ▼
- ┌──────────────────────────────┐
- │ Microsoft Sentinel           │
- │  ├─ Analytics rule (T1110)   │
- │  ├─ Geo-IP watchlist         │
- │  └─ Workbook: attack map     │
- └──────────────────────────────┘
+```mermaid
+flowchart LR
+    ATK["Internet attackers<br/>7 IPs · 1,276 failed logons"]
+    ME["My machine<br/>connectivity test + 2 test logins"]
+
+    subgraph AZ["Azure · RG-SOC-Lab"]
+        NSG["NSG: DANGER_AllowAnyCustomAnyInbound<br/>any source · any port · any protocol"]
+        VM["Windows 10 VM<br/>dev-api-east2"]
+        LAW[("Log Analytics workspace<br/>law-soc-lab-0000<br/>SecurityEvent table")]
+    end
+
+    subgraph SEN["Microsoft Sentinel / Defender portal"]
+        WL["GeoIP watchlist<br/>~55K IP ranges"]
+        RULE["Analytics rule · T1110<br/>≥5 failed logons per IP / 15 min"]
+        INC["10 incidents"]
+        TRI["Triage<br/>True positive · resolved"]
+        MAP["Workbook<br/>attack map"]
+        HUNT["Hunting queries<br/>attacker summary · compromise check"]
+    end
+
+    ATK -->|"RDP brute force (Event 4625)"| NSG
+    ME -.->|"Test-NetConnection :3389"| NSG
+    NSG --> VM
+    VM -->|"Windows Security Events"| LAW
+    LAW --> RULE --> INC --> TRI
+    LAW --> MAP
+    WL --> MAP
+    LAW --> HUNT
 ```
 
 | Resource | Name | Role |
