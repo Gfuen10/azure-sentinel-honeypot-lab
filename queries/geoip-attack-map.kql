@@ -1,0 +1,17 @@
+// Geo-IP enrichment powering the "Windows VM Attack Map" workbook (map visualization)
+// Source: Josh Madakor, "Cyber Home Lab from ZERO and Catch Attackers!
+//         Free, Easy, and REAL (Microsoft Sentinel 2025)": https://youtu.be/g5JL2RIbThM
+// Watchlist: alias "geoip", source geoip-summarized.csv (~55K rows), SearchKey = network
+//
+// Note: this query doesn't filter out empty/local IPs or my own test logins,
+// and it uses the workbook's time range, so its counts can differ slightly
+// from queries/attacker-summary.kql.
+
+let GeoIPDB_FULL = _GetWatchlist("geoip");
+let WindowsEvents = SecurityEvent;
+WindowsEvents | where EventID == 4625
+| order by TimeGenerated desc
+| evaluate ipv4_lookup(GeoIPDB_FULL, IpAddress, network)
+| summarize FailureCount = count() by IpAddress, latitude, longitude, cityname, countryname
+| project FailureCount, AttackerIp = IpAddress, latitude, longitude, city = cityname, country = countryname,
+friendly_location = strcat(cityname, " (", countryname, ")");

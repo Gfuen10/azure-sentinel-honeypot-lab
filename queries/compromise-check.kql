@@ -1,0 +1,11 @@
+// Did any IP that failed to log on ever log on successfully? (4624 = successful logon)
+// Result: 0 rows, so there was no successful compromise.
+let Attackers = SecurityEvent
+| where TimeGenerated between (datetime(2026-11-19) .. datetime(2026-11-23))
+| where EventID == 4625 and isnotempty(IpAddress) and IpAddress != "-" and IpAddress != "127.0.0.1"
+| distinct IpAddress;
+SecurityEvent
+| where TimeGenerated between (datetime(2026-11-19) .. datetime(2026-11-23))
+| where EventID == 4624
+| where IpAddress in (Attackers)
+| project TimeGenerated, IpAddress, Account, LogonType

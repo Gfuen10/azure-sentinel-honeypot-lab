@@ -1,0 +1,12 @@
+// RDP Brute-Force Attempt Detected (Event 4625)
+// Sentinel scheduled analytics rule | Severity: Medium
+// MITRE ATT&CK: Credential Access / T1110 Brute Force
+// Runs every 15 minutes over the last 15 minutes of data.
+// Creates an incident when the query returns more than 0 results.
+// (Exact query copied from the deployed rule.)
+
+SecurityEvent
+| where EventID == 4625
+| where isnotempty(IpAddress) and IpAddress != "-" and IpAddress != "127.0.0.1"
+| summarize FailedAttempts = count(), TargetedAccounts = make_set(Account) by IpAddress, Computer
+| where FailedAttempts >= 5

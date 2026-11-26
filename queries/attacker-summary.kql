@@ -1,0 +1,9 @@
+// Failed RDP logons (Event 4625) by attacker IP, Nov 19-23, 2026
+// My own pipeline-test logins (MicrosoftAccount\...) are excluded.
+SecurityEvent
+| where TimeGenerated between (datetime(2026-11-19) .. datetime(2026-11-23))
+| where EventID == 4625
+| where isnotempty(IpAddress) and IpAddress != "-" and IpAddress != "127.0.0.1"
+| where Account !startswith "MicrosoftAccount"
+| summarize FailedAttempts = count(), UniqueAccounts = dcount(Account), FirstSeen = min(TimeGenerated), LastSeen = max(TimeGenerated) by IpAddress
+| order by FailedAttempts desc

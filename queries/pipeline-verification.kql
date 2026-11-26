@@ -1,0 +1,13 @@
+// 1) Confirm my own test logins arrived (run right after failing an RDP login)
+SecurityEvent
+| where EventID == 4625
+| where TimeGenerated > ago(15m)
+| project TimeGenerated, Computer, TargetAccount, IpAddress, LogonType
+| order by TimeGenerated desc
+
+// 2) All-event activity check: is the VM logging anything at all?
+//    (Used to rule out a pipeline stall during quiet 4625 windows. Returned 19 distinct EventIDs.)
+SecurityEvent
+| where TimeGenerated > ago(7h)
+| summarize Count = count() by EventID, Activity
+| order by Count desc
